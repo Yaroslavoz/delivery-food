@@ -56,6 +56,7 @@ const notAuthorized = () => {
     if (logined) {
     toogleAuth()
     console.log(logined)
+    fillIt.style.display = 'none'
     localStorage.setItem('gloDelivery', logined)
     buttonAuth.removeEventListener('click', toogleAuth)
     closeAuth.removeEventListener('click', toogleAuth)
