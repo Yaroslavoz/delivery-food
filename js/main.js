@@ -18,6 +18,10 @@ const menu = document.querySelector('.menu')
 const logo = document.querySelector('.logo')
 const cardsMenu = document.querySelector('.cards-menu')
 const sectionHeading = document.querySelector('.heading')
+const modalBody = document.querySelector('.modal-body')
+const modalPrice = document.querySelector('.modal-pricetag')
+const clearCart = document.querySelector('.clear-cart')
+const cart = []
 
 let logined = localStorage.getItem('gloDelivery')
 
@@ -38,15 +42,23 @@ function toggleModal() {
   modal.classList.toggle("is-open")
 }
 
+const returnMain = () => {
+  containerPromo.classList.remove('hide')
+  restaurants.classList.remove('hide')
+  menu.classList.add('hide')
+}
+
 const authorized = () => {
   const logOut = () => {
     logined = null
-    //localStorage.removeItem('gloDelivery')
+    localStorage.removeItem('gloDelivery')
     buttonAuth.style.display = ''
     userName.style.display = ''
     buttonOut.style.display = ''
+    cartButton.style.display = ''
     buttonOut.removeEventListener('click', logOut)
     checkAuth()
+    returnMain()
   }
   console.log('Authorized');
   userName.textContent = logined;
@@ -54,8 +66,8 @@ const authorized = () => {
   buttonAuth.style.display = 'none'
   userName.style.display = 'inline'
   userName.style.color = 'white'
-  buttonOut.style.display = 'block'
-
+  buttonOut.style.display = 'flex'
+  cartButton.style.display = 'flex'
   buttonOut.addEventListener('click', logOut)
   
 }
@@ -139,8 +151,9 @@ const createCardGood = ({ description, id, image, name, price }) => {
       
   const card = document.createElement('div')
   card.className = 'card'
+  
   card.insertAdjacentHTML('beforeend',  `
-    <img src="${image}" alt="${id}" class="card-image"/>
+    <img src="${image}" alt="image" class="card-image"/>
     <div class="card-text">
       <div class="card-heading">
         <h3 class="card-title card-title-reg">${name}</h3>
@@ -151,11 +164,11 @@ const createCardGood = ({ description, id, image, name, price }) => {
         </div>
       </div>
       <div class="card-buttons">
-        <button class="button button-primary button-add-cart">
+        <button class="button button-primary button-add-cart" id=${id}>
           <span class="button-card-text">В корзину</span>
           <span class="button-cart-svg"></span>
         </button>
-        <strong class="card-price-bold">${price} ₽</strong>
+        <strong class="card-price card-price-bold">${price} ₽</strong>
       </div>
     </div> 
   `)
@@ -173,7 +186,7 @@ const openGoods = (event) => {
       getData(`../db/partners.json`).then((it)=>it.find((elem)=>elem.products === restaurant.dataset.products)).then((data) =>createHeading(data))
       getData(`../db/${restaurant.dataset.products}`).then((data)=>{data.map(createCardGood)
       })
-      console.log(restaurant.dataset.products);
+      
       
     }
   } else {
@@ -201,11 +214,81 @@ const openGoods = (event) => {
     
 }
 
+const addToCart = (event) => {
+  const target = event.target
+  const buttonAddToCart = target.closest('.button-add-cart')
+  if(buttonAddToCart)  {
+    const card = target.closest('.card')
+    const title = card.querySelector('.card-title-reg').textContent
+    const cost = card.querySelector('.card-price').textContent
+    const id = buttonAddToCart.id
+    const food = cart.find((it)=>{
+      return it.id === id
+    })
+    food ? food.count += 1 
+    : cart.push({
+      id,
+      title,
+      cost,
+      count: 1
+    })
+    
+  }
+}
+
+const renderCart = () => {
+  modalBody.textContent = ''
+
+  cart.map(( {id, title, cost, count} ) =>{
+    const itemCart = `
+    <div class="food-row">
+      <span class="food-name">${title}</span>
+      <strong class="food-price">${cost} UAH</strong>
+      <div class="food-counter">
+        <button class="counter-button counter-minus" data-id=${id}>-</button>
+        <span class="counter">${count}</span>
+        <button class="counter-button counter-plus" data-id=${id}>+</button>
+      </div>
+    </div>
+    `
+    modalBody.insertAdjacentHTML('beforeend', itemCart)
+  })
+  const totalPrice = cart.reduce((acc, rec) => {return acc +( parseFloat(rec.cost) * rec.count)}, 0)
+  modalPrice.textContent = totalPrice + 'UAH'
+}
+
+const changeCount = (event) => {
+  const target = event.target
+  if(target.classList.contains('counter-button')){
+    const food = cart.find((it)=>{
+      return it.id === target.dataset.id
+    })
+    if(target.classList.contains('counter-minus')) {
+      food.count--
+      food.count <= 0 ?  cart.splice(cart.indexOf(food), 1) : food.count-- 
+   }
+   if(target.classList.contains('counter-plus')) {
+     food.count++
+   }
+    renderCart()
+  }
+}
+
 const init = () => {
   getData('../db/partners.json').then((data)=>{data.map(createCardRestaurants)
   })
-  
-  cartButton.addEventListener("click", toggleModal)
+  modalBody.addEventListener('click', changeCount)
+
+  clearCart.addEventListener('click', ()=>{
+    cart.length = 0
+    renderCart()
+  })
+
+  cartButton.addEventListener("click", ()=>{
+    renderCart()
+    toggleModal()})
+
+  cardsMenu.addEventListener('click', addToCart)
   
   close.addEventListener("click", toggleModal)
   
