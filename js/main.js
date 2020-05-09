@@ -17,8 +17,19 @@ const restaurants = document.querySelector('.restaurants')
 const menu = document.querySelector('.menu')
 const logo = document.querySelector('.logo')
 const cardsMenu = document.querySelector('.cards-menu')
+const sectionHeading = document.querySelector('.heading')
 
 let logined = localStorage.getItem('gloDelivery')
+
+const getData = async function(url)  {
+  const response =await fetch(url)
+
+  if(!response.ok) {
+    throw new Error(`Custom error at address ${url}, error status ${response.status}!!`)
+  }
+  return response.json()
+  
+}
 
 const toogleAuth = ()=> {
   modalAuth.classList.toggle('is-open')
@@ -81,21 +92,22 @@ const checkAuth = () =>  {
     logined ? authorized() : notAuthorized()
   }
 
-const createCardRestaurants = () => {
+const createCardRestaurants = ({ image, name, time_of_delivery: timeOfDelivery, stars, price, kitchen, products }) => {
+  
   const card = `
-      <a class="card card-restaurant">
-        <img src="img/tanuki/preview.jpg" alt="image" class="card-image"/>
+      <a class="card card-restaurant" data-products="${products}">
+        <img src=${image} alt="image" class="card-image"/>
         <div class="card-text">
           <div class="card-heading">
-            <h3 class="card-title">Тануки</h3>
-            <span class="card-tag tag">60 мин</span>
+            <h3 class="card-title" >${name}</h3>
+            <span class="card-tag tag">${timeOfDelivery}</span>
           </div>
           <div class="card-info">
             <div class="rating">
-              4.5
+              ${stars}
             </div>
-            <div class="price">От 1 200 ₽</div>
-            <div class="category">Суши, роллы</div>
+            <div class="price">От ${price} ₽</div>
+            <div class="category">${kitchen}</div>
           </div>
         </div>
       </a>
@@ -103,19 +115,39 @@ const createCardRestaurants = () => {
     cardsRestaurants.insertAdjacentHTML('beforeend', card)
 }
 
-const createCardGood = () => {
+const createHeading = (it) => {
+  
+  const { name, stars, price, kitchen } = it
+  console.log(it);
+  // const head = document.createElement('div')
+  // head.className = 'heading'
+  
+  const head = `
+    <h2 class="section-title restaurant-title">${name}</h2>
+    <div class="card-info">
+      <div class="rating">
+        ${stars}
+      </div>
+      <div class="price">От ${price} ₽</div>
+      <div class="category">${kitchen}</div>
+    </div>
+  `
+  sectionHeading.insertAdjacentHTML('beforeend' , head)
+}
+
+const createCardGood = ({ description, id, image, name, price }) => {
+      
   const card = document.createElement('div')
   card.className = 'card'
   card.insertAdjacentHTML('beforeend',  `
-    <img src="img/pizza-plus/pizza-girls.jpg" alt="image" class="card-image"/>
+    <img src="${image}" alt="${id}" class="card-image"/>
     <div class="card-text">
       <div class="card-heading">
-        <h3 class="card-title card-title-reg">Пицца Девичник</h3>
+        <h3 class="card-title card-title-reg">${name}</h3>
       </div>
       
       <div class="card-info">
-        <div class="ingredients">Соус томатный, постное тесто, нежирный сыр, кукуруза, лук, маслины,
-                                  грибы, помидоры, болгарский перец.
+        <div class="ingredients">${description}
         </div>
       </div>
       <div class="card-buttons">
@@ -123,7 +155,7 @@ const createCardGood = () => {
           <span class="button-card-text">В корзину</span>
           <span class="button-cart-svg"></span>
         </button>
-        <strong class="card-price-bold">450 ₽</strong>
+        <strong class="card-price-bold">${price} ₽</strong>
       </div>
     </div> 
   `)
@@ -138,10 +170,11 @@ const openGoods = (event) => {
       containerPromo.classList.add('hide')
       restaurants.classList.add('hide')
       menu.classList.remove('hide')
-      createCardGood()
-      createCardGood()
-      createCardGood()
-      createCardGood()
+      getData(`../db/partners.json`).then((it)=>it.find((elem)=>elem.products === restaurant.dataset.products)).then((data) =>createHeading(data))
+      getData(`../db/${restaurant.dataset.products}`).then((data)=>{data.map(createCardGood)
+      })
+      console.log(restaurant.dataset.products);
+      
     }
   } else {
     toogleAuth()
@@ -168,19 +201,25 @@ const openGoods = (event) => {
     
 }
 
+const init = () => {
+  getData('../db/partners.json').then((data)=>{data.map(createCardRestaurants)
+  })
+  
+  cartButton.addEventListener("click", toggleModal)
+  
+  close.addEventListener("click", toggleModal)
+  
+  cardsRestaurants.addEventListener('click', openGoods)
+  
+  logo.addEventListener('click', () => {
+    containerPromo.classList.remove('hide')
+      restaurants.classList.remove('hide')
+      menu.classList.add('hide')
+  })
+  
+  checkAuth();
+}
+
+init()
 
 
-cartButton.addEventListener("click", toggleModal)
-
-close.addEventListener("click", toggleModal)
-
-cardsRestaurants.addEventListener('click', openGoods)
-
-logo.addEventListener('click', () => {
-  containerPromo.classList.remove('hide')
-    restaurants.classList.remove('hide')
-    menu.classList.add('hide')
-})
-
-checkAuth();
-createCardRestaurants()
